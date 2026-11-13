@@ -1,0 +1,93 @@
+// Crea en Stripe (SÓLO modo prueba) el producto, los 3 precios y los 3 Payment Links,
+// y guarda sus IDs en .env.   Uso:  npm run stripe:prueba
+// Se puede correr varias veces: reutiliza lo que ya exista (por lookup_key / metadata).
+import Stripe from 'stripe';
+import { actualizarEnv, cargarEnv } from './env.mjs';
+
+cargarEnv();
+const llave = process.env.STRIPE_SECRET_KEY || '';
+if (!/^sk_test_/.test(llave)) {
+  console.error('\n✖ Pon tu llave secreta de PRUEBA (sk_test_…) en el archivo .env, en STRIPE_SECRET_KEY=');
+  console.error('  Este script se niega a trabajar con llaves reales (sk_live_).\n');
+  process.exit(1);
+}
+const stripe = new Stripe(llave);
+const sitio = (process.env.SITE_URL || 'http://localhost:8888').replace(/\/$/, '');
+
+const PLANES = [
+  { clave: 'mensual', nombre: 'Mensual', monto: 63684, recurrente: true },
+  { clave: 'trimestral', nombre: 'Prepago 3 meses', monto: 191052 },
+  { clave: 'anual', nombre: 'Anual (paga 10, recibe 12)', monto: 636840 },
+];
+
+async function producto() {
+  // list (no search): la búsqueda de Stripe tarda en ver productos recién creados
+  for await (const p of stripe.products.list({ limit: 100, active: true })) {
+    if (p.metadata?.dash === 'salud_digital') return p;
+  }
+  return stripe.products.create({
+    name: 'DASH MEDIC CARE – Salud Digital',
+    description: 'Membresía Salud Digital (incluye IVA)',
+    metadata: { dash: 'salud_digital' },
+  });
+}
+
+async function precio(prod, p) {
+  const lookup = `dash_salud_digital_${p.clave}`;
+  const r = await stripe.prices.list({ lookup_keys: [lookup], limit: 1 });
+  if (r.data[0]) return r.data[0];
+  return stripe.prices.create({
+    product: prod.id,
+    currency: 'mxn',
+    unit_amount: p.monto,
+    tax_behavior: 'inclusive',
+    lookup_key: lookup,
+    nickname: `Salud Digital – ${p.nombre}`,
+    ...(p.recurrente ? { recurring: { interval: 'month' } } : {}),
+  });
+}
+
+async function enlaceExistente(clave) {
+  for await (const l of stripe.paymentLinks.list({ limit: 100, active: true })) {
+    if (l.metadata?.dash_plan === clave) return l;
+  }
+  return null;
+}
+
+async function enlace(p, pr) {
+  const previo = await enlaceExistente(p.clave);
+  if (previo) return previo;
+  const base = {
+    line_items: [{ price: pr.id, quantity: 1 }],
+    metadata: { dash_plan: p.clave },
+    custom_fields: [
+      { key: 'nombre', label: { type: 'custom', custom: 'Nombre(s)' }, type: 'text' },
+      { key: 'apellidos', label: { type: 'custom', custom: 'Apellidos' }, type: 'text' },
+    ],
+    phone_number_collection: { enabled: true },
+    after_completion: { type: 'redirect', redirect: { url: `${sitio}/gracias-membresia.html` } },
+  };
+  if (p.recurrente) {
+    return stripe.paymentLinks.create({ ...base, payment_method_types: ['card'] });
+  }
+  try {
+    return await stripe.paymentLinks.create({ ...base, customer_creation: 'always', payment_method_types: ['card', 'oxxo'] });
+  } catch (e) {
+    console.warn(`  (OXXO no disponible en tu cuenta: ${e.message}) → sólo tarjeta`);
+    return stripe.paymentLinks.create({ ...base, customer_creation: 'always', payment_method_types: ['card'] });
+  }
+}
+
+const prod = await producto();
+console.log(`Producto: ${prod.id}`);
+const env = {};
+for (const p of PLANES) {
+  const pr = await precio(prod, p);
+  const l = await enlace(p, pr);
+  const M = p.clave.toUpperCase();
+  env[`STRIPE_PRICE_${M}`] = pr.id;
+  env[`STRIPE_LINK_${M}`] = l.url;
+  console.log(`${p.nombre.padEnd(28)} ${pr.id}  ${l.url}`);
+}
+actualizarEnv(env);
+console.log('\n✔ Listo. Los IDs quedaron guardados en .env (modo prueba).');

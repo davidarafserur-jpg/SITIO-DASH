@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .netlify/
+# Datos de la vista previa local (hoja, correos y eventos de prueba)
+.local/
 .env
 .env.*
 !.env.example

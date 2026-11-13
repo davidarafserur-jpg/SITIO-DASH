@@ -4,6 +4,26 @@ Todo en **modo de prueba** de Stripe (`sk_test_…`) y con una **hoja de Google 
 Usa tu propio correo en `EVERHEALTH_EMAIL` y `ADMIN_EMAIL` para no mandarle pruebas a Ever Health.
 Los comandos son para **PowerShell**.
 
+## Prueba rápida en tu computadora (sin publicar nada)
+
+No necesita Netlify, Google Sheets ni Resend: la hoja y los correos se guardan en la carpeta `.local/`
+y se ven en un panel.
+
+1. En Stripe activa **Test mode / Sandbox**, copia la *Secret key* (`sk_test_…`) y pégala en el archivo `.env`, en `STRIPE_SECRET_KEY=`.
+2. Crea el producto, los 3 precios y los 3 Payment Links de prueba (sólo la primera vez):
+   ```bash
+   npm run stripe:prueba
+   ```
+3. Arranca la vista previa (deja la ventana abierta; se detiene con Ctrl + C):
+   ```bash
+   npm run local
+   ```
+4. Abre `http://localhost:8888/membresias.html?e=prueba&v=V012`, elige un plan y paga con la tarjeta `4242 4242 4242 4242` (cualquier fecha futura y CVC).
+5. Abre `http://localhost:8888/_local`: verás la fila de Alta, el cobro, las comisiones (V012 + PAULO) y el correo de bienvenida.
+6. En el mismo panel, **Correr tarea diaria** con una fecha simulada para ver el lote a Ever Health, los avisos de renovación y los vencimientos.
+
+**Reiniciar datos locales** borra la hoja, los correos y el registro de eventos de `.local/`; no toca nada en Stripe.
+
 ## 0. Preparación (una vez)
 
 1. Instala Node 20 y Netlify CLI:
