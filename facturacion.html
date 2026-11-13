@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Facturación | DASH Medic Care</title>
+<meta name="robots" content="noindex"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;margin:0;min-height:100vh;background:linear-gradient(135deg,#1E2461 0%,#1565C0 60%,#1E8FBA 100%);color:#1f2937;padding:32px 16px;}
+.card{max-width:620px;margin:0 auto;background:#fff;border-radius:18px;padding:32px 28px;box-shadow:0 20px 50px rgba(0,0,0,.2);}
+h1{font-size:28px;font-weight:900;color:#1E2461;margin:0 0 8px;}
+p.lead{color:#4b5563;line-height:1.6;margin:0 0 24px;font-size:15px;}
+label{display:block;font-weight:600;font-size:14px;color:#1E2461;margin:16px 0 6px;}
+input,select{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;font-size:15px;background:#fff;}
+input:focus,select:focus{outline:2px solid #47C6E8;border-color:#47C6E8;}
+small.ayuda{display:block;color:#6b7280;font-size:12.5px;margin-top:5px;line-height:1.5;}
+.fila{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;}
+@media (max-width:560px){.fila{grid-template-columns:1fr;}}
+button{margin-top:26px;width:100%;background:#47C6E8;color:#1E2461;font-weight:800;font-size:16px;border:0;padding:15px;border-radius:10px;cursor:pointer;}
+button:disabled{opacity:.6;cursor:wait;}
+.msg{display:none;margin-top:20px;padding:14px 16px;border-radius:10px;font-size:15px;line-height:1.5;}
+.msg.ok{display:block;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;}
+.msg.error{display:block;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
+.trampa{position:absolute;left:-9999px;}
+.pie{text-align:center;margin-top:22px;font-size:14px;}
+.pie a{color:#fff;}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Solicita tu factura (CFDI 4.0)</h1>
+  <p class="lead">Llena tus datos tal como aparecen en tu Constancia de Situación Fiscal. Si no solicitas factura, tu pago se incluye en la factura global a público en general.</p>
+
+  <form id="form-factura" novalidate>
+    <label for="id_pago">ID de tu pago</label>
+    <input id="id_pago" name="id_pago" required placeholder="pi_… o número de factura de Stripe" autocomplete="off"/>
+    <small class="ayuda">Viene en tu correo de bienvenida o renovación. En los cargos mensuales usa el número de factura de tu recibo de Stripe.</small>
+
+    <label for="correo">Correo con el que pagaste</label>
+    <input id="correo" name="correo" type="email" required autocomplete="email"/>
+
+    <div class="fila">
+      <div>
+        <label for="rfc">RFC</label>
+        <input id="rfc" name="rfc" required maxlength="13" style="text-transform:uppercase" autocomplete="off"/>
+      </div>
+      <div>
+        <label for="cp">Código postal fiscal</label>
+        <input id="cp" name="cp" required inputmode="numeric" maxlength="5" pattern="\d{5}"/>
+      </div>
+    </div>
+
+    <label for="razon_social">Nombre o razón social</label>
+    <input id="razon_social" name="razon_social" required style="text-transform:uppercase"/>
+    <small class="ayuda">Sin régimen societario (por ejemplo, sin "S.A. de C.V.").</small>
+
+    <div class="fila">
+      <div>
+        <label for="regimen_fiscal">Régimen fiscal</label>
+        <select id="regimen_fiscal" name="regimen_fiscal" required>
+          <option value="">Selecciona…</option>
+          <option value="605">605 · Sueldos y salarios</option>
+          <option value="612">612 · Actividades empresariales y profesionales</option>
+          <option value="626">626 · Régimen Simplificado de Confianza</option>
+          <option value="606">606 · Arrendamiento</option>
+          <option value="625">625 · Plataformas tecnológicas</option>
+          <option value="621">621 · Incorporación fiscal</option>
+          <option value="608">608 · Demás ingresos</option>
+          <option value="616">616 · Sin obligaciones fiscales</option>
+          <option value="601">601 · General de ley personas morales</option>
+          <option value="603">603 · Personas morales con fines no lucrativos</option>
+        </select>
+      </div>
+      <div>
+        <label for="uso_cfdi">Uso del CFDI</label>
+        <select id="uso_cfdi" name="uso_cfdi" required>
+          <option value="G03">G03 · Gastos en general</option>
+          <option value="D01">D01 · Honorarios médicos, dentales y hospitalarios</option>
+          <option value="S01">S01 · Sin efectos fiscales</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="trampa" aria-hidden="true"><label>No llenar <input name="sitio_web" tabindex="-1" autocomplete="off"/></label></div>
+
+    <button type="submit" id="enviar">Solicitar factura</button>
+    <div class="msg" id="msg" role="status"></div>
+  </form>
+</div>
+<p class="pie"><a href="/mi-cuenta.html">Mi cuenta</a> · <a href="/membresias.html">Membresías</a> · (55) 8120-2122</p>
+
+<script>
+const form = document.getElementById('form-factura');
+const msg = document.getElementById('msg');
+const btn = document.getElementById('enviar');
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  msg.className = 'msg';
+  if (!form.reportValidity()) return;
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const r = await fetch('/api/facturacion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(new FormData(form))),
+    });
+    const datos = await r.json().catch(() => ({}));
+    msg.textContent = datos.mensaje || (r.ok ? 'Recibimos tu solicitud.' : 'No pudimos procesar tu solicitud.');
+    msg.className = 'msg ' + (r.ok && datos.ok ? 'ok' : 'error');
+    if (r.ok && datos.ok) form.reset();
+  } catch (err) {
+    msg.textContent = 'No hay conexión. Intenta de nuevo o llámanos al (55) 8120-2122.';
+    msg.className = 'msg error';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Solicitar factura';
+  }
+});
+</script>
+</body>
+</html>

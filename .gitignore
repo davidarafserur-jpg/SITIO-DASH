@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.netlify/
+.env
+.env.*
+!.env.example
+# Respaldos locales (no se suben ni se publican)
+index.respaldo-*.html
