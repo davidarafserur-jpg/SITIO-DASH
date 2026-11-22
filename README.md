@@ -90,7 +90,7 @@ Copia cada `price_…` a las variables `STRIPE_PRICE_*`.
 
 ### 3.2 Payment Links
 Crea un Payment Link por precio:
-- **Campos personalizados** (máx. 3): `Nombre(s)` y `Apellidos`, tipo texto, obligatorios. La automatización los reconoce por la palabra "nombre" / "apellido" en la etiqueta o la clave.
+- **Campos personalizados** (máx. 3): `Nombre(s)`, `Apellido paterno` y `Apellido materno` (este último opcional), tipo texto. Es el formato que pide Ever Health (plantilla BBDD USUARIOS). `npm run stripe:prueba` los configura solo. La automatización los reconoce por "nombre" / "paterno" / "materno" en la etiqueta o la clave; si sólo hay un campo "Apellidos", la primera palabra se toma como paterno.
 - **Recopilar número de teléfono**: activado.
 - **Métodos de pago**: mensual → sólo tarjeta. Prepagos → tarjeta, OXXO y transferencia bancaria (SPEI). Actívalos antes en Configuración → Métodos de pago.
 - **Después del pago** → redirigir a `https://<tu-dominio>/gracias-membresia.html`.
@@ -107,7 +107,7 @@ Configuración → Facturación → **Portal de clientes**:
 - Permitir cancelar suscripciones **al final del periodo de facturación**.
 - Activa el **enlace de inicio de sesión** y pégalo en `STRIPE_PORTAL_LOGIN` de `mi-cuenta.html`.
 
-> **Mínimo de 3 meses:** el portal deja cancelar en cualquier momento al final del periodo. La automatización registra la baja y, si hubo menos de 3 cobros, lo anota en `Notas` y avisa a `ADMIN_EMAIL` para que cobres los meses restantes según el contrato. No bloquea la cancelación.
+> **Mínimo de 3 meses (`MINIMO_MESES`, 3 por defecto):** si el **cliente** cancela antes de completar 3 cobros, al recibir `customer.subscription.deleted` se registra la baja y se emite una factura por los meses que faltan (`metadata.tipo = minimo`), cobrada a su tarjeta. El cliente recibe un correo de confirmación y `ADMIN_EMAIL` un aviso. Ese cobro aparece en `Cobros` con tipo `minimo` y **no genera comisión** (sólo se comisiona el servicio que efectivamente se dio). Si la cancelación fue por pago fallido o disputa, no se cobra: sólo se avisa. Si el cargo es rechazado, Stripe reintenta y, al agotar los reintentos, llega un aviso.
 
 ### 3.5 Registrar el webhook
 Desarrolladores → **Webhooks → Agregar endpoint**:
@@ -137,7 +137,13 @@ La primera vez que corre, la automatización **crea las pestañas y los encabeza
 
 | Pestaña | Contenido |
 |---|---|
-| `Movimientos` | Una fila por Alta y una por Baja. Columnas pedidas (fecha, movimiento, nombre, apellidos, correo, celular, plan Ever Health, membresía, modalidad, grupo, vendedor, ID cliente Stripe, vigente_hasta, enviado_a_EverHealth) **más columnas de control**: Estado (activo/baja, en las filas de Alta), Empresa, Referencia Stripe, ID pago, Aviso renovación, Fecha envío Ever Health, Notas. |
+| `Movimientos` | Una fila por Alta y una por Baja. Columnas pedidas (fecha, movimiento, nombre, apellido paterno, apellido materno, correo, celular, plan Ever Health, membresía, modalidad, grupo, vendedor, ID cliente Stripe, vigente_hasta, enviado_a_EverHealth) **más columnas de control**: Estado (activo/baja, en las filas de Alta), Empresa, Referencia Stripe, ID pago, Aviso renovación, Fecha envío Ever Health, Notas. |
+
+> El **lote para Ever Health** usa su formato: `NOMBRE (S)`, `APELLIDO PATERNO`, `APELLIDO MATERNO`, `CORREO`, seguido de movimiento, fecha, celular, plan, grupo, modalidad y vigencia. Si a una pestaña le falta una columna nueva, se agrega sola al final.
+>
+> **Correo mal escrito:** si Resend rechaza la dirección de un cliente, el webhook no falla (Stripe no reintenta en vano): se anota en `Notas` y llega un aviso a `ADMIN_EMAIL`. Otros errores de correo sí devuelven 500 para que Stripe reintente.
+>
+> **Vista previa de los correos:** `npm run local` y luego `node scripts/vista-correos.mjs` → http://localhost:8888/_correos/
 | `Comisiones` | Una fila por cobro y por beneficiario. Columna **Pagada** para que administración marque lo pagado. |
 | `Vendedores` | Código, Nombre, Líder, Activo. Se crea con la fila de PAULO. |
 | `Cobros` | *(de apoyo)* Una fila por pago: monto cobrado y reembolsado, forma de pago SAT, CFDI. Registra también los cobros sin vendedor y alimenta la facturación. |
@@ -224,7 +230,7 @@ Cada paso es independiente: si uno falla, los demás corren y llega una alerta c
 ## 12. Supuestos y pendientes por confirmar
 
 1. **Comisiones de prepago** (sección 7): supuesto configurable.
-2. **Mínimo de 3 meses:** se avisa, no se bloquea (sección 3.4).
+2. **Mínimo de 3 meses:** si el cliente cancela antes, se le cobran los meses restantes, sin comisión (sección 3.4).
 3. **Vendedor inactivo:** deja de cobrar, también residuales; el líder conserva su parte.
 4. **Reembolsos:** revierten la comisión proporcional; la baja es manual.
 5. Un cliente con suscripción mensual que además compra un prepago genera una segunda Alta (no se fusionan).

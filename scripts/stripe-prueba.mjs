@@ -54,16 +54,24 @@ async function enlaceExistente(clave) {
   return null;
 }
 
+// Ever Health pide nombre, apellido paterno y apellido materno por separado (Stripe permite 3 campos).
+const CAMPOS = [
+  { key: 'nombre', label: { type: 'custom', custom: 'Nombre(s)' }, type: 'text' },
+  { key: 'apellidopaterno', label: { type: 'custom', custom: 'Apellido paterno' }, type: 'text' },
+  { key: 'apellidomaterno', label: { type: 'custom', custom: 'Apellido materno' }, type: 'text', optional: true },
+];
+
 async function enlace(p, pr) {
   const previo = await enlaceExistente(p.clave);
-  if (previo) return previo;
+  if (previo) {
+    const claves = (previo.custom_fields || []).map((c) => c.key).join(',');
+    if (claves === CAMPOS.map((c) => c.key).join(',')) return previo;
+    return stripe.paymentLinks.update(previo.id, { custom_fields: CAMPOS });
+  }
   const base = {
     line_items: [{ price: pr.id, quantity: 1 }],
     metadata: { dash_plan: p.clave },
-    custom_fields: [
-      { key: 'nombre', label: { type: 'custom', custom: 'Nombre(s)' }, type: 'text' },
-      { key: 'apellidos', label: { type: 'custom', custom: 'Apellidos' }, type: 'text' },
-    ],
+    custom_fields: CAMPOS,
     phone_number_collection: { enabled: true },
     after_completion: { type: 'redirect', redirect: { url: `${sitio}/gracias-membresia.html` } },
   };

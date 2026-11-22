@@ -41,7 +41,23 @@ test('Datos del cliente desde campos personalizados', () => {
     ],
     customer_details: { email: 'Ana@Example.com', phone: '+525512345678', name: 'Otro Nombre' },
   };
-  assert.deepEqual(datosCliente(s), { nombre: 'Ana María', apellidos: 'López Pérez', correo: 'ana@example.com', celular: '+525512345678' });
+  assert.deepEqual(datosCliente(s), { nombre: 'Ana María', apellidos: 'López Pérez', apellidoPaterno: 'López', apellidoMaterno: 'Pérez', correo: 'ana@example.com', celular: '+525512345678' });
+});
+
+test('Campos de nombre, apellido paterno y materno (formato Ever Health)', () => {
+  const s = {
+    custom_fields: [
+      { key: 'nombre', label: { custom: 'Nombre(s)' }, text: { value: 'Juan' } },
+      { key: 'apellidopaterno', label: { custom: 'Apellido paterno' }, text: { value: 'Pérez' } },
+      { key: 'apellidomaterno', label: { custom: 'Apellido materno' }, text: { value: 'de la Garza' } },
+    ],
+    customer_details: { email: 'j@p.mx' },
+  };
+  const d = datosCliente(s);
+  assert.equal(d.nombre, 'Juan');
+  assert.equal(d.apellidoPaterno, 'Pérez');
+  assert.equal(d.apellidoMaterno, 'de la Garza');
+  assert.equal(d.apellidos, 'Pérez de la Garza');
 });
 
 test('Sin campos personalizados se separa el nombre completo', () => {
