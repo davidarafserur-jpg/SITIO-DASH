@@ -165,6 +165,26 @@
       .loyal { padding: 30px; }
       .hero { padding-top: 120px; }
     }
+    /* Computadora: tarjetas compactas para que "Contratar" se vea sin desplazarse */
+    @media (min-width: 961px) {
+      #planes { padding-top: 24px; padding-bottom: 56px; scroll-margin-top: 50px; }
+      #planes .tag { display: none; }
+      #planes h2.section-title { font-size: 28px; margin-bottom: 4px; }
+      #planes .section-subtitle { font-size: 15px; }
+      #planes .billing-toggle { margin: 12px auto 20px; }
+      #planes .billing-toggle button { padding: 8px 20px; }
+      .pricing-grid { align-items: start; gap: 24px; }
+      .price-card { padding: 22px 26px 20px; }
+      .price-card:hover { transform: translateY(-3px); }
+      .price-name { font-size: 20px; }
+      .price-for { margin: 2px 0 8px; }
+      .price-amount { font-size: 38px; }
+      .price-detail { min-height: 0; margin-top: 4px; }
+      .price-list { margin: 10px 0 14px; }
+      .price-list li { font-size: 13.5px; line-height: 1.4; padding: 4px 0 4px 24px; }
+      .price-card .btn { padding: 12px 24px; }
+      .alt-pay { margin-top: 8px; }
+    }
   </style>
 </head>
 <body>
