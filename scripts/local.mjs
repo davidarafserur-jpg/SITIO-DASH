@@ -69,6 +69,7 @@ if (llave) {
 const RUTAS = {
   '/api/stripe-webhook': 'stripe-webhook.mjs',
   '/api/facturacion': 'facturacion.mjs',
+  '/api/checkout': 'checkout.mjs',
   '/_local/tarea-diaria': 'tarea-diaria.mjs',
 };
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.ico': 'image/x-icon' };

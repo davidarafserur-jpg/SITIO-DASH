@@ -124,6 +124,21 @@ Desarrolladores → **Webhooks → Agregar endpoint**:
 
 El código lee los campos de las facturas tanto en versiones de API anteriores como posteriores a 2025-03 (los IDs de suscripción y pago cambiaron de lugar).
 
+
+## Salud Digital familiar
+
+Tarifario interno *DASH INDIVIDUAL* (pág. 3): titular **$549 + IVA** y cada familiar **$275 + IVA** al mes, hasta 6 (anual: pagas 10 meses y recibes 12). Se publica como paquete, nunca como porcentaje: "titular + 3 por $1,374 + IVA".
+
+- **Página:** en la tarjeta Salud Digital, "Suma a tu familia" (− / +) recalcula el precio. Con 1 o más familiares, "Contratar" abre un formulario para registrar nombre, apellido paterno, apellido materno y correo de cada familiar (sólo datos de contacto). Sin familiares todo sigue igual (Payment Links).
+- **Pago:** `/api/checkout` (netlify/functions/checkout.mjs) crea una sesión de Stripe con el titular × 1 y el familiar × N; los familiares viajan en `metadata` (`fam_1`…`fam_6`). Mensual = suscripción con tarjeta; anual = pago único con tarjeta u OXXO.
+- **Precios de familiar en Stripe:** producto "Salud Digital – Familiar", lookup_key `dash_salud_digital_familiar_mensual_v2` / `…_anual_v2` ($319.00 al mes y $3,190.00 al año con IVA). `npm run stripe:prueba` los crea; el sitio los encuentra por lookup_key (o por `STRIPE_PRICE_FAMILIAR_MENSUAL` / `_ANUAL` si se definen).
+- **Hoja y Ever Health:** cada familiar es un usuario normal: su propia fila de Alta (referencia `<titular>#f1`, `#f2`…), entra al lote diario con su correo y cuenta en la bolsa Basic. Recibe su propio correo de bienvenida ("<titular> te sumó a su membresía").
+- **Bajas:** si el titular cancela o deja de pagar, se dan de baja también sus familiares. El plazo mínimo de 3 meses se cobra sobre todo el paquete.
+- **Comisiones:** cada familiar comisiona la **mitad** de la tarifa del titular (`familiar.factor = 0.5`, ajustable con `COMISIONES_JSON`).
+- **Renovación anual:** el aviso lo recibe sólo el titular, con enlace a la página para renovar el paquete completo.
+
+> **Pendiente con Ever Health (Rafael):** confirmar por escrito que cada familiar se puede dar de alta como titular propio en el plan Basic.
+
 ## 4. Google Sheets
 
 1. En https://console.cloud.google.com crea un proyecto → **APIs y servicios → Habilitar APIs** → **Google Sheets API**.

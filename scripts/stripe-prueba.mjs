@@ -18,22 +18,27 @@ const PLANES = [
   { clave: 'mensual', nombre: 'Mensual', monto: 63684, recurrente: true },
   { clave: 'trimestral', nombre: 'Prepago 3 meses', monto: 191052 },
   { clave: 'anual', nombre: 'Anual (paga 10, recibe 12)', monto: 636840 },
+  // Salud Digital familiar: cada familiar $275 + IVA al mes (tarifario DASH INDIVIDUAL). Sin Payment Link:
+  // se cobran junto con el titular desde /api/checkout.
+  { clave: 'familiar_mensual', nombre: 'Familiar (mensual)', monto: 31900, recurrente: true, sinEnlace: true, familiar: true },
+  { clave: 'familiar_anual', nombre: 'Familiar (anual, paga 10 recibe 12)', monto: 319000, sinEnlace: true, familiar: true },
 ];
 
-async function producto() {
+const PRODUCTOS = {
+  salud_digital: { name: 'DASH MEDIC CARE – Salud Digital', description: 'Membresía Salud Digital (incluye IVA)' },
+  salud_digital_familiar: { name: 'Salud Digital – Familiar', description: 'Familiar adicional de la membresía Salud Digital familiar (incluye IVA)' },
+};
+
+async function producto(clave = 'salud_digital') {
   // list (no search): la búsqueda de Stripe tarda en ver productos recién creados
   for await (const p of stripe.products.list({ limit: 100, active: true })) {
-    if (p.metadata?.dash === 'salud_digital') return p;
+    if (p.metadata?.dash === clave) return p;
   }
-  return stripe.products.create({
-    name: 'DASH MEDIC CARE – Salud Digital',
-    description: 'Membresía Salud Digital (incluye IVA)',
-    metadata: { dash: 'salud_digital' },
-  });
+  return stripe.products.create({ ...PRODUCTOS[clave], metadata: { dash: clave } });
 }
 
 async function precio(prod, p) {
-  const lookup = `dash_salud_digital_${p.clave}`;
+  const lookup = `dash_salud_digital_${p.clave}${p.familiar ? '_v2' : ''}`;
   const r = await stripe.prices.list({ lookup_keys: [lookup], limit: 1 });
   if (r.data[0]) return r.data[0];
   return stripe.prices.create({
@@ -90,12 +95,13 @@ const prod = await producto();
 console.log(`Producto: ${prod.id}`);
 const env = {};
 for (const p of PLANES) {
-  const pr = await precio(prod, p);
-  const l = await enlace(p, pr);
+  const pr = await precio(p.familiar ? await producto('salud_digital_familiar') : prod, p);
   const M = p.clave.toUpperCase();
   env[`STRIPE_PRICE_${M}`] = pr.id;
+  if (p.sinEnlace) { console.log(`${p.nombre.padEnd(36)} ${pr.id}`); continue; }
+  const l = await enlace(p, pr);
   env[`STRIPE_LINK_${M}`] = l.url;
-  console.log(`${p.nombre.padEnd(28)} ${pr.id}  ${l.url}`);
+  console.log(`${p.nombre.padEnd(36)} ${pr.id}  ${l.url}`);
 }
 actualizarEnv(env);
 console.log('\n✔ Listo. Los IDs quedaron guardados en .env (modo prueba).');

@@ -11,6 +11,8 @@ const p = await import(pathToFileURL(path.join(raiz, 'lib', 'plantillas.mjs')).h
 const ejemplos = {
   'bienvenida-mensual': p.bienvenida({ nombre: 'Ana María', modalidad: 'mensual', pagoId: 'pi_3UbPktGnDOk4iQu61WFke9oD' }),
   'bienvenida-trimestral': p.bienvenida({ nombre: 'Ana María', modalidad: 'trimestral', vigenteHasta: '2027-02-21', pagoId: 'pi_3UbPktGnDOk4iQu61WFke9oD' }),
+  'bienvenida-titular-familia': p.bienvenida({ nombre: 'Ana María', modalidad: 'mensual', pagoId: '', familiares: 3 }),
+  'bienvenida-familiar': p.bienvenida({ nombre: 'Lucía', modalidad: 'mensual', titularNombre: 'Ana María López', familiares: 0 }),
   'renovacion-confirmada': p.renovacionConfirmada({ nombre: 'Ana María', modalidad: 'anual', vigenteHasta: '2028-02-21', pagoId: 'pi_3Ub' }),
   'aviso-renovacion': p.avisoRenovacion({ nombre: 'Ana María', modalidad: 'trimestral', vigenteHasta: '2027-02-21', dias: 10, link: 'https://buy.stripe.com/test_ejemplo', precio: p.PRECIOS.trimestral }),
   'cargo-minimo': p.cargoMinimo({ nombre: 'Ana María', meses: 2, cobros: 1, minimo: 3, monto: 1273.68 }),

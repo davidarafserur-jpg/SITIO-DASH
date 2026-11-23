@@ -165,6 +165,35 @@
       .loyal { padding: 30px; }
       .hero { padding-top: 120px; }
     }
+    /* SALUD DIGITAL FAMILIAR */
+    .fam-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--light); border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; margin: 12px 0 0; text-align: left; }
+    .fam-row b { display: block; font-size: 13.5px; color: var(--navy); }
+    .fam-row small { display: block; font-size: 12px; color: var(--gray); line-height: 1.35; }
+    .stepper { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 100px; background: var(--white); flex-shrink: 0; }
+    .stepper button { width: 32px; height: 32px; border: none; background: transparent; font-size: 18px; font-weight: 800; color: var(--navy); cursor: pointer; border-radius: 100px; font-family: inherit; }
+    .stepper button:hover:not(:disabled) { background: var(--light); }
+    .stepper button:disabled { color: #C3C9D9; cursor: default; }
+    .stepper output { min-width: 22px; text-align: center; font-weight: 800; color: var(--navy); }
+    .ver-mas { display: none; background: none; border: none; color: var(--blue); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; padding: 0; margin: -6px 0 14px; text-align: left; }
+    .fam-dialogo { margin: auto; border: none; border-radius: 20px; padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); box-shadow: 0 24px 60px rgba(30,36,97,0.25); color: var(--navy); }
+    .fam-dialogo::backdrop { background: rgba(13,27,75,0.55); }
+    .fam-dialogo form { padding: 26px 26px 20px; }
+    .fam-cab { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .fam-cab h3 { font-size: 20px; font-weight: 800; color: var(--navy); }
+    .fam-cab p { font-size: 13.5px; color: var(--gray); margin-top: 4px; }
+    .fam-cerrar { background: none; border: none; font-size: 28px; line-height: 1; color: var(--gray); cursor: pointer; }
+    .fam-persona { border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+    .fam-persona legend { font-size: 13px; font-weight: 800; color: var(--blue); padding: 0 6px; }
+    .fam-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fam-campos .full { grid-column: 1 / -1; }
+    .fam-campos label { font-size: 12px; margin-bottom: 4px; }
+    .fam-campos input { padding: 10px 12px; font-size: 14px; }
+    .fam-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; background: var(--light); border-radius: 12px; padding: 12px 14px; margin: 4px 0 12px; font-size: 14px; }
+    .fam-total b { font-size: 18px; color: var(--navy); }
+    .fam-error { color: #B42318; background: #FEF3F2; border-radius: 10px; padding: 10px 12px; font-size: 13.5px; margin-bottom: 12px; }
+    .fam-nota { font-size: 12px; color: var(--gray); text-align: center; margin-top: 10px; }
+    @media (max-width: 560px) { .fam-campos { grid-template-columns: 1fr; } }
+
     /* Computadora: tarjetas compactas para que "Contratar" se vea sin desplazarse */
     @media (min-width: 961px) {
       #planes { padding-top: 24px; padding-bottom: 56px; scroll-margin-top: 50px; }
@@ -173,7 +202,13 @@
       #planes .section-subtitle { font-size: 15px; }
       #planes .billing-toggle { margin: 12px auto 20px; }
       #planes .billing-toggle button { padding: 8px 20px; }
-      .pricing-grid { align-items: start; gap: 24px; }
+      .pricing-grid { align-items: stretch; gap: 24px; }
+      .price-list li.extra { display: none; }
+      .price-card.abierta .price-list li.extra { display: block; }
+      .ver-mas { display: block; margin: -10px 0 10px; }
+      .fam-row { padding: 6px 10px; margin-top: 10px; }
+      .stepper button { width: 30px; height: 30px; }
+      .price-card.featured .price-for { margin-bottom: 6px; }
       .price-card { padding: 22px 26px 20px; }
       .price-card:hover { transform: translateY(-3px); }
       .price-name { font-size: 20px; }
@@ -250,9 +285,17 @@
         <div class="price-card featured fade-in">
           <div class="price-flag">Disponible hoy</div>
           <div class="price-name">Salud <span>Digital</span></div>
-          <div class="price-for">Para ti, como titular.</div>
-          <div class="price-amount" data-mensual="$549" data-anual="$5,490">$549 <small data-mensual="+ IVA /mes" data-anual="+ IVA /año">+ IVA /mes</small></div>
-          <div class="price-detail" data-mensual="$637 con IVA incluido · mínimo 3 meses" data-anual="$6,368 con IVA · pagas 10 meses y recibes 12">$637 con IVA incluido · mínimo 3 meses</div>
+          <div class="price-for" id="dg-for">Para ti, como titular.</div>
+          <div class="price-amount" id="dg-precio">$549 <small>+ IVA /mes</small></div>
+          <div class="price-detail" id="dg-detalle">$637 con IVA incluido · mínimo 3 meses</div>
+          <div class="fam-row">
+            <div><b>Suma a tu familia</b><small id="dg-fam-nota">Cada familiar $275 + IVA/mes</small></div>
+            <div class="stepper" aria-label="Familiares">
+              <button type="button" id="fam-menos" aria-label="Quitar familiar" disabled>−</button>
+              <output id="fam-n" aria-live="polite">0</output>
+              <button type="button" id="fam-mas" aria-label="Agregar familiar">+</button>
+            </div>
+          </div>
           <ul class="price-list">
             <li>Medicina general por videollamada, 24/7 e ilimitada</li>
             <li>Psicología y nutrición en horario laboral</li>
@@ -261,8 +304,9 @@
             <li>Campañas preventivas y contenido de salud</li>
             <li>Programa de Lealtad DMC</li>
           </ul>
-          <a href="#" class="btn btn-primary js-buy" data-plan="digital">Contratar Salud Digital</a>
-          <div class="alt-pay">¿Sin tarjeta? <a href="#" class="js-buy" data-plan="digital_trimestral">Paga 3 meses en OXXO o transferencia ($1,647 + IVA)</a></div>
+          <a href="#" class="btn btn-primary js-buy" data-plan="digital" id="dg-boton">Contratar Salud Digital</a>
+          <div class="alt-pay" id="dg-alt">¿Sin tarjeta? <a href="#" class="js-buy" data-plan="digital_trimestral">Paga 3 meses en OXXO o transferencia ($1,647 + IVA)</a></div>
+          <div class="alt-pay" id="dg-alt-fam" hidden>Paquete familiar: mensual con tarjeta, o anual con tarjeta u OXXO.</div>
         </div>
 
         <!-- SALUD INTEGRAL -->
@@ -306,7 +350,7 @@
         </div>
       </div>
 
-      <p class="fine">Mensual: cargo automático a tu tarjeta, mínimo 3 meses, cancelación con 30 días de aviso. Puedes subir de membresía cuando quieras; bajar, al renovar. Las jornadas presenciales y estudios de laboratorio no están incluidos y se cotizan por separado.</p>
+      <p class="fine">Salud Digital familiar: titular + 3 familiares por $1,374 + IVA al mes; cada familiar adicional $275 + IVA, hasta 6. Cada familiar tiene su propio acceso y expediente. Mensual: cargo automático a tu tarjeta, mínimo 3 meses, cancelación con 30 días de aviso. Puedes subir de membresía cuando quieras; bajar, al renovar. Las jornadas presenciales y estudios de laboratorio no están incluidos y se cotizan por separado.</p>
     </div>
   </section>
 
@@ -412,6 +456,24 @@
     </div>
   </footer>
 
+  <!-- REGISTRO DE FAMILIARES (Salud Digital familiar) -->
+  <dialog id="fam-dialogo" class="fam-dialogo" aria-labelledby="fam-titulo">
+    <form id="fam-form" method="dialog" novalidate>
+      <div class="fam-cab">
+        <div>
+          <h3 id="fam-titulo">Registra a tus familiares</h3>
+          <p>Cada familiar recibe su propio acceso en su correo. Tus datos como titular los pides en el siguiente paso, al pagar.</p>
+        </div>
+        <button type="button" class="fam-cerrar" id="fam-cerrar" aria-label="Cerrar">×</button>
+      </div>
+      <div id="fam-lista"></div>
+      <div class="fam-total" id="fam-total"></div>
+      <p class="fam-error" id="fam-error" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary" id="fam-pagar" style="width:100%;">Continuar al pago</button>
+      <p class="fam-nota">Sólo pedimos datos de contacto. Nunca te pediremos información de salud.</p>
+    </form>
+  </dialog>
+
   <div class="sticky-cta">
     <div><b>$549 + IVA/mes</b><small>Salud Digital · $637 con IVA</small></div>
     <a href="#planes" class="btn btn-primary" style="padding:12px 20px;">Contratar</a>
@@ -454,9 +516,106 @@
       if (plan === 'digital') return billing === 'anual' ? STRIPE_LINKS.digital_anual : STRIPE_LINKS.digital_mensual;
       return STRIPE_LINKS[plan] || '';
     }
+    /* ====== SALUD DIGITAL FAMILIAR ======
+       Titular $549 + cada familiar $275 (MXN + IVA, hasta 6). Anual: pagas 10 meses y recibes 12.
+       Con familiares, el pago se abre desde /api/checkout (titular + familiares en un solo cobro). */
+    const PRECIO = { titular: 549, familiar: 275, max: 6, iva: 1.16 };
+    let familiares = 0;
+    const $ = id => document.getElementById(id);
+    const mxn = n => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
+    function renderDigital() {
+      const anual = billing === 'anual';
+      const base = PRECIO.titular + PRECIO.familiar * familiares;
+      const total = anual ? base * 10 : base;
+      const conIva = Math.round(total * PRECIO.iva * 100) / 100;
+      $('fam-n').textContent = familiares;
+      $('fam-menos').disabled = familiares === 0;
+      $('fam-mas').disabled = familiares === PRECIO.max;
+      $('dg-precio').firstChild.nodeValue = mxn(total) + ' ';
+      $('dg-precio').querySelector('small').textContent = anual ? '+ IVA /año' : '+ IVA /mes';
+      $('dg-for').textContent = familiares ? `Para ti y ${familiares} ${familiares === 1 ? 'familiar' : 'familiares'} (${familiares + 1} personas).` : 'Para ti, como titular.';
+      $('dg-detalle').textContent = anual
+        ? `${mxn(Math.round(conIva))} con IVA · pagas 10 meses y recibes 12`
+        : `${mxn(Math.round(conIva))} con IVA incluido · mínimo 3 meses`;
+      $('dg-fam-nota').textContent = anual ? 'Cada familiar $2,750 + IVA/año' : 'Cada familiar $275 + IVA/mes';
+      $('dg-boton').textContent = familiares ? 'Contratar Salud Digital familiar' : 'Contratar Salud Digital';
+      $('dg-alt').hidden = familiares > 0;
+      $('dg-alt-fam').hidden = familiares === 0;
+    }
+    $('fam-mas').addEventListener('click', () => { familiares = Math.min(PRECIO.max, familiares + 1); renderDigital(); });
+    $('fam-menos').addEventListener('click', () => { familiares = Math.max(0, familiares - 1); renderDigital(); });
+    document.querySelectorAll('.billing-toggle button').forEach(btn => btn.addEventListener('click', renderDigital));
+
+    const dialogo = $('fam-dialogo');
+    function abrirRegistro() {
+      const lista = $('fam-lista');
+      const previos = [...lista.querySelectorAll('fieldset')].map(fs => Object.fromEntries([...fs.querySelectorAll('input')].map(i => [i.name, i.value])));
+      lista.innerHTML = '';
+      for (let i = 0; i < familiares; i++) {
+        const p = previos[i] || {};
+        const fs = document.createElement('fieldset');
+        fs.className = 'fam-persona';
+        fs.innerHTML = `<legend>Familiar ${i + 1}</legend><div class="fam-campos">
+          <div class="full"><label>Nombre(s)</label><input name="nombre" autocomplete="off" required maxlength="60"></div>
+          <div><label>Apellido paterno</label><input name="apellidoPaterno" autocomplete="off" required maxlength="60"></div>
+          <div><label>Apellido materno</label><input name="apellidoMaterno" autocomplete="off" maxlength="60"></div>
+          <div class="full"><label>Correo (será su acceso)</label><input name="correo" type="email" autocomplete="off" required maxlength="120"></div></div>`;
+        fs.querySelectorAll('input').forEach(inp => { inp.value = p[inp.name] || ''; });
+        lista.appendChild(fs);
+      }
+      const anual = billing === 'anual';
+      const base = PRECIO.titular + PRECIO.familiar * familiares;
+      const total = anual ? base * 10 : base;
+      $('fam-total').innerHTML = `<span>Titular + ${familiares} ${familiares === 1 ? 'familiar' : 'familiares'} · ${anual ? 'anual' : 'mensual'}</span><span><b>${mxn(total)}</b> + IVA ${anual ? '/año' : '/mes'}</span>`;
+      $('fam-error').hidden = true;
+      dialogo.showModal();
+      lista.querySelector('input')?.focus();
+    }
+    $('fam-cerrar').addEventListener('click', () => dialogo.close());
+    $('fam-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const error = msg => { $('fam-error').textContent = msg; $('fam-error').hidden = false; };
+      const datos = [...$('fam-lista').querySelectorAll('fieldset')].map(fs => Object.fromEntries([...fs.querySelectorAll('input')].map(i => [i.name, i.value.trim()])));
+      const correos = new Set();
+      for (const [i, f] of datos.entries()) {
+        if (!f.nombre || !f.apellidoPaterno) return error(`Familiar ${i + 1}: escribe nombre y apellido paterno.`);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.correo)) return error(`Familiar ${i + 1}: el correo no es válido.`);
+        if (correos.has(f.correo.toLowerCase())) return error(`Familiar ${i + 1}: cada persona necesita un correo distinto (es su acceso).`);
+        correos.add(f.correo.toLowerCase());
+      }
+      const boton = $('fam-pagar');
+      boton.disabled = true; boton.textContent = 'Abriendo el pago…';
+      try {
+        const r = await fetch('/api/checkout', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modalidad: billing, familiares: datos, ref: (empresa || 'web') + '__' + (vendedor || 'directo') }),
+        });
+        const res = await r.json().catch(() => ({}));
+        if (!r.ok || !res.url) throw new Error(res.error || 'No pudimos abrir el pago. Intenta de nuevo.');
+        location.href = res.url;
+      } catch (err) {
+        error(err.message);
+        boton.disabled = false; boton.textContent = 'Continuar al pago';
+      }
+    });
+
+    /* Tarjetas del mismo alto en computadora: se muestran 4 beneficios y "Ver todo lo que incluye" */
+    document.querySelectorAll('.price-card').forEach(card => {
+      const items = card.querySelectorAll('.price-list li');
+      if (items.length <= 4) return;
+      items.forEach((li, i) => { if (i >= 4) li.classList.add('extra'); });
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'ver-mas';
+      const etiqueta = () => card.classList.contains('abierta') ? 'Ver menos' : `Ver todo lo que incluye (+${items.length - 4})`;
+      b.textContent = etiqueta();
+      b.addEventListener('click', () => { card.classList.toggle('abierta'); b.textContent = etiqueta(); });
+      card.querySelector('.price-list').after(b);
+    });
+
     document.querySelectorAll('.js-buy').forEach(a => {
       a.addEventListener('click', e => {
         e.preventDefault();
+        if (a.dataset.plan === 'digital' && familiares > 0) { abrirRegistro(); return; }
         const base = linkFor(a.dataset.plan);
         if (!base) {
           document.getElementById('f-plan').value = 'Salud Digital';

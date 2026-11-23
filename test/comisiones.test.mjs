@@ -65,6 +65,15 @@ test('Cantidad > 1 multiplica por membresía', () => {
   assert.deepEqual(montos(calc('V012', { tipo: 'cierre', modalidad: 'mensual', cantidad: 2 })), { V012: 240, PAULO: 58 });
 });
 
+test('Salud Digital familiar: cada familiar comisiona la mitad', () => {
+  // Titular + 3 familiares, primer cobro mensual
+  assert.deepEqual(montos(calc('V012', { tipo: 'cierre', modalidad: 'mensual', familiares: 3 })), { V012: 120 + 3 * 60, PAULO: 29 + 3 * 14.5 });
+  assert.deepEqual(montos(calc('V012', { tipo: 'mensual', modalidad: 'mensual', familiares: 3 })), { V012: 30 + 3 * 15, PAULO: 20 + 3 * 10 });
+  assert.deepEqual(montos(calc('PAULO', { tipo: 'cierre', modalidad: 'mensual', familiares: 1 })), { PAULO: 149 + 74.5 });
+  // Anual (supuesto prepago): 1 cierre + 11 mensuales, familiares a la mitad
+  assert.deepEqual(montos(calc('V012', { tipo: 'prepago', modalidad: 'anual', familiares: 2 })), { V012: 450 + 2 * 225, PAULO: 249 + 2 * 124.5 });
+});
+
 test('COMISIONES_JSON cambia las reglas de prepago', () => {
   const reglas = reglasComisiones('{"prepago":{"mesesComisionables":{"anual":10}}}');
   assert.deepEqual(unidadesDelCobro({ tipo: 'prepago', modalidad: 'anual' }, reglas), { cierres: 1, mensuales: 9 });

@@ -72,6 +72,20 @@ test('CSV escapa comillas y comas', () => {
   assert.equal(csv, '"A","B"\r\n"x,""y""","1"');
 });
 
+test('Familiares: validación y metadata de Stripe', async () => {
+  const { validarFamiliares, familiaresAMetadata, familiaresDeMetadata, esReferenciaFamiliar, titularDeReferencia } = await import('../lib/familia.mjs');
+  const ok = validarFamiliares([{ nombre: ' Lucía ', apellidoPaterno: 'Pérez', apellidoMaterno: '', correo: 'LU@x.mx' }]);
+  assert.equal(ok.error, undefined);
+  assert.equal(ok.familiares[0].correo, 'lu@x.mx');
+  assert.match(validarFamiliares([{ nombre: 'A', apellidoPaterno: 'B', correo: 'malo' }]).error, /correo/);
+  assert.match(validarFamiliares([{ nombre: 'A', apellidoPaterno: 'B', correo: 'a@x.mx' }, { nombre: 'C', apellidoPaterno: 'D', correo: 'A@x.mx' }]).error, /distinto/);
+  assert.match(validarFamiliares(Array(7).fill({ nombre: 'A', apellidoPaterno: 'B', correo: 'a@x.mx' })).error, /hasta 6/);
+  const m = familiaresAMetadata(ok.familiares);
+  assert.deepEqual(familiaresDeMetadata(m).map((f) => f.nombre), ['Lucía']);
+  assert.ok(esReferenciaFamiliar('sub_123#f2'));
+  assert.equal(titularDeReferencia('sub_123#f2'), 'sub_123');
+});
+
 test('Validación de solicitud de factura', () => {
   const base = { correo: 'a@b.mx', rfc: 'lopa800101ab1', razon_social: 'Ana López', regimen_fiscal: '605', cp: '06600', uso_cfdi: 'G03', id_pago: 'pi_123456' };
   const ok = validarSolicitud(base);
