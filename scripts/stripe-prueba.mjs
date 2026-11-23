@@ -104,4 +104,43 @@ for (const p of PLANES) {
   console.log(`${p.nombre.padEnd(36)} ${pr.id}  ${l.url}`);
 }
 actualizarEnv(env);
+
+// ---- Precios especiales por empresa (lib/empresas.mjs) y cupón Fundadores
+const { EMPRESAS, lookupEmpresa } = await import(new URL('../lib/empresas.mjs', import.meta.url).href);
+for (const [codigo, emp] of Object.entries(EMPRESAS)) {
+  const clave = `salud_digital_${codigo}`;
+  let prodEmp = null;
+  for await (const p of stripe.products.list({ limit: 100, active: true })) if (p.metadata?.dash === clave) { prodEmp = p; break; }
+  prodEmp ||= await stripe.products.create({
+    name: `Salud Digital – ${emp.nombre}`,
+    description: `Membresía Salud Digital, precio exclusivo para colaboradores de ${emp.nombre} (incluye IVA)`,
+    metadata: { dash: clave, empresa: codigo },
+  });
+  for (const paq of emp.paquetes) {
+    for (const modalidad of ['mensual', 'anual']) {
+      const lookup = lookupEmpresa(codigo, paq.clave, modalidad);
+      const ya = await stripe.prices.list({ lookup_keys: [lookup], limit: 1 });
+      const pr = ya.data[0] || await stripe.prices.create({
+        product: prodEmp.id, currency: 'mxn', tax_behavior: 'inclusive', lookup_key: lookup,
+        unit_amount: Math.round(paq[modalidad] * 116), // + IVA, en centavos
+        nickname: `${emp.nombre} – ${paq.nombre} (${paq.personas} ${paq.personas === 1 ? 'persona' : 'personas'}) ${modalidad}`,
+        metadata: { empresa: codigo, paquete: paq.clave, personas: String(paq.personas), modalidad },
+        ...(modalidad === 'mensual' ? { recurring: { interval: 'month' } } : {}),
+      });
+      console.log(`${emp.nombre} ${paq.nombre} ${modalidad}`.padEnd(40), pr.id, `$${pr.unit_amount / 100}`);
+    }
+  }
+  if (emp.fundadores?.cupon) {
+    try {
+      await stripe.coupons.retrieve(emp.fundadores.cupon);
+    } catch {
+      await stripe.coupons.create({
+        id: emp.fundadores.cupon, percent_off: emp.fundadores.porcentaje, duration: 'once',
+        name: `Fundadores ${emp.nombre}`.slice(0, 40), // Stripe: máx. 40 caracteres
+        applies_to: { products: [prodEmp.id] },
+      });
+    }
+    console.log(`Cupón ${emp.fundadores.cupon}: ${emp.fundadores.porcentaje}% en el primer pago`);
+  }
+}
 console.log('\n✔ Listo. Los IDs quedaron guardados en .env (modo prueba).');

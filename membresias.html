@@ -520,14 +520,35 @@
        Titular $549 + cada familiar $275 (MXN + IVA, hasta 6). Anual: pagas 10 meses y recibes 12.
        Con familiares, el pago se abre desde /api/checkout (titular + familiares en un solo cobro). */
     const PRECIO = { titular: 549, familiar: 275, max: 6, iva: 1.16 };
+    /* Precios especiales por empresa (copia de lib/empresas.mjs; el cobro usa la del servidor).
+       Se activan con el código de empresa del enlace o QR: ?e=cosmopolitana */
+    const EMPRESAS = {
+      cosmopolitana: {
+        nombre: 'La Cosmopolitana', fundadores: 20,
+        paquetes: [
+          { nombre: 'Individual', personas: 1, mensual: 439, anual: 4390 },
+          { nombre: 'Dúo', personas: 2, mensual: 699, anual: 6990 },
+          { nombre: 'Familiar', personas: 4, mensual: 999, anual: 9990 },
+          { nombre: 'Extendido', personas: 7, mensual: 1499, anual: 14990 },
+        ],
+      },
+    };
+    const EMPRESA = EMPRESAS[(empresa || '').toLowerCase()] || null;
     let familiares = 0;
     const $ = id => document.getElementById(id);
     const mxn = n => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
+    const paqueteActual = () => EMPRESA && EMPRESA.paquetes.find(p => p.personas >= familiares + 1);
+    function totalActual() {
+      const anual = billing === 'anual';
+      if (EMPRESA) return paqueteActual()[anual ? 'anual' : 'mensual'];
+      const base = PRECIO.titular + PRECIO.familiar * familiares;
+      return anual ? base * 10 : base;
+    }
     function renderDigital() {
       const anual = billing === 'anual';
-      const base = PRECIO.titular + PRECIO.familiar * familiares;
-      const total = anual ? base * 10 : base;
+      const total = totalActual();
       const conIva = Math.round(total * PRECIO.iva * 100) / 100;
+      if (EMPRESA) return renderEmpresa(anual, total, conIva);
       $('fam-n').textContent = familiares;
       $('fam-menos').disabled = familiares === 0;
       $('fam-mas').disabled = familiares === PRECIO.max;
@@ -542,6 +563,46 @@
       $('dg-alt').hidden = familiares > 0;
       $('dg-alt-fam').hidden = familiares === 0;
     }
+    function renderEmpresa(anual, total, conIva) {
+      const paq = paqueteActual();
+      $('fam-n').textContent = familiares;
+      $('fam-menos').disabled = familiares === 0;
+      $('fam-mas').disabled = familiares === PRECIO.max;
+      $('dg-precio').firstChild.nodeValue = mxn(total) + ' ';
+      $('dg-precio').querySelector('small').textContent = anual ? '+ IVA /año' : '+ IVA /mes';
+      $('dg-for').innerHTML = `<b style="color:var(--blue)">Precio exclusivo ${EMPRESA.nombre}</b> · Paquete ${paq.nombre} (${paq.personas} ${paq.personas === 1 ? 'persona' : 'personas'})`;
+      $('dg-detalle').textContent = anual
+        ? `${mxn(Math.round(conIva))} con IVA · pagas 10 meses y recibes 12`
+        : (EMPRESA.fundadores
+          ? `Fundadores: tu primer pago ${mxn(Math.round(total * (1 - EMPRESA.fundadores / 100)))} + IVA · mínimo 3 meses`
+          : `${mxn(Math.round(conIva))} con IVA incluido · mínimo 3 meses`);
+      $('dg-fam-nota').textContent = EMPRESA.paquetes.slice(1).map(p => `${p.nombre} ${p.personas}: ${mxn(p[anual ? 'anual' : 'mensual'])}`).join(' · ');
+      $('dg-boton').textContent = familiares ? `Contratar paquete ${paq.nombre}` : 'Contratar Salud Digital';
+      $('dg-alt').hidden = true;
+      $('dg-alt-fam').hidden = false;
+      $('dg-alt-fam').textContent = 'Mensual con tarjeta, o anual con tarjeta u OXXO.';
+    }
+    /* Con precio de empresa, el resto de la página (portada y barra del celular) muestra ese precio. */
+    if (EMPRESA) {
+      const base = EMPRESA.paquetes[0].mensual;
+      const h1 = document.querySelector('.hero h1');
+      if (h1) h1.innerHTML = `Tu médico <span>24/7</span>, en tu celular, por ${mxn(base)} + IVA al mes.`;
+      const badge = document.querySelector('.hero-badge');
+      if (badge) badge.innerHTML = `<i></i> Precio exclusivo para colaboradores de ${EMPRESA.nombre}`;
+      const big = document.querySelector('.hero-card .big');
+      if (big) big.firstChild.nodeValue = `${mxn(base)} `;
+      const sub = document.querySelector('.hero-card .sub');
+      if (sub) sub.textContent = EMPRESA.fundadores
+        ? `Fundadores: tu primer pago ${mxn(Math.round(base * (1 - EMPRESA.fundadores / 100)))} + IVA · mínimo 3 meses`
+        : `${mxn(Math.round(base * PRECIO.iva))} con IVA incluido · mínimo 3 meses`;
+      const sticky = document.querySelector('.sticky-cta');
+      if (sticky) {
+        sticky.querySelector('b').textContent = `${mxn(base)} + IVA/mes`;
+        sticky.querySelector('small').textContent = `Precio ${EMPRESA.nombre}`;
+      }
+    }
+    if (EMPRESA) renderDigital();
+
     $('fam-mas').addEventListener('click', () => { familiares = Math.min(PRECIO.max, familiares + 1); renderDigital(); });
     $('fam-menos').addEventListener('click', () => { familiares = Math.max(0, familiares - 1); renderDigital(); });
     document.querySelectorAll('.billing-toggle button').forEach(btn => btn.addEventListener('click', renderDigital));
@@ -564,9 +625,9 @@
         lista.appendChild(fs);
       }
       const anual = billing === 'anual';
-      const base = PRECIO.titular + PRECIO.familiar * familiares;
-      const total = anual ? base * 10 : base;
-      $('fam-total').innerHTML = `<span>Titular + ${familiares} ${familiares === 1 ? 'familiar' : 'familiares'} · ${anual ? 'anual' : 'mensual'}</span><span><b>${mxn(total)}</b> + IVA ${anual ? '/año' : '/mes'}</span>`;
+      const total = totalActual();
+      const quien = EMPRESA ? `Paquete ${paqueteActual().nombre} · ${EMPRESA.nombre}` : `Titular + ${familiares} ${familiares === 1 ? 'familiar' : 'familiares'}`;
+      $('fam-total').innerHTML = `<span>${quien} · ${anual ? 'anual' : 'mensual'}</span><span><b>${mxn(total)}</b> + IVA ${anual ? '/año' : '/mes'}</span>`;
       $('fam-error').hidden = true;
       dialogo.showModal();
       lista.querySelector('input')?.focus();
@@ -586,18 +647,23 @@
       const boton = $('fam-pagar');
       boton.disabled = true; boton.textContent = 'Abriendo el pago…';
       try {
-        const r = await fetch('/api/checkout', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ modalidad: billing, familiares: datos, ref: (empresa || 'web') + '__' + (vendedor || 'directo') }),
-        });
-        const res = await r.json().catch(() => ({}));
-        if (!r.ok || !res.url) throw new Error(res.error || 'No pudimos abrir el pago. Intenta de nuevo.');
-        location.href = res.url;
+        await irAPagar(datos);
       } catch (err) {
         error(err.message);
         boton.disabled = false; boton.textContent = 'Continuar al pago';
       }
     });
+
+    /* Abre el pago de Stripe desde /api/checkout (familiares y/o precio de empresa). */
+    async function irAPagar(datos) {
+      const r = await fetch('/api/checkout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ modalidad: billing, familiares: datos, ref: (empresa || 'web') + '__' + (vendedor || 'directo') }),
+      });
+      const res = await r.json().catch(() => ({}));
+      if (!r.ok || !res.url) throw new Error(res.error || 'No pudimos abrir el pago. Intenta de nuevo.');
+      location.href = res.url;
+    }
 
     /* Tarjetas del mismo alto en computadora: se muestran 4 beneficios y "Ver todo lo que incluye" */
     document.querySelectorAll('.price-card').forEach(card => {
@@ -616,6 +682,11 @@
       a.addEventListener('click', e => {
         e.preventDefault();
         if (a.dataset.plan === 'digital' && familiares > 0) { abrirRegistro(); return; }
+        if (a.dataset.plan === 'digital' && EMPRESA) {
+          const texto = a.textContent; a.textContent = 'Abriendo el pago…';
+          irAPagar([]).catch(err => { a.textContent = texto; alert(err.message); });
+          return;
+        }
         const base = linkFor(a.dataset.plan);
         if (!base) {
           document.getElementById('f-plan').value = 'Salud Digital';

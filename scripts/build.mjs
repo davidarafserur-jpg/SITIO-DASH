@@ -3,7 +3,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const EXCLUIR = new Set([
-  'node_modules', 'netlify', 'lib', 'scripts', 'test', 'dist',
+  'node_modules', 'netlify', 'lib', 'scripts', 'test', 'dist', 'qr-vendedores',
   'package.json', 'package-lock.json', 'netlify.toml',
 ]);
 const EXCLUIR_PATRON = [

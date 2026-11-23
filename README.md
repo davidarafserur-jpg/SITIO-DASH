@@ -251,3 +251,34 @@ Cada paso es independiente: si uno falla, los demás corren y llega una alerta c
 5. Un cliente con suscripción mensual que además compra un prepago genera una segunda Alta (no se fusionan).
 6. **Facturación:** claves SAT, CP de expedición y regla del mes en curso, por validar con el contador.
 7. `CORPORATIVOS_ACTIVOS` se actualiza a mano.
+
+
+## Vendedores: enlace y código QR
+
+Cada venta se atribuye con el enlace `membresias.html?e=<empresa>&v=<código de vendedor>` (viaja a Stripe como `client_reference_id`). El código debe existir en la pestaña **Vendedores** con Activo = sí.
+
+```bash
+npm run qr                                    # todos los vendedores activos (lee la hoja: SHEET_ID + llave en .env)
+npm run qr -- --empresa cosmopolitana         # QR con el precio de La Cosmopolitana
+npm run qr -- --codigos PAULO,V012            # sólo esos códigos, sin leer la hoja
+npm run qr -- --sitio https://dash-pruebas.netlify.app   # apuntar al sitio de pruebas
+```
+
+Resultado en `qr-vendedores/<empresa|general>/`: un PNG por vendedor y `index.html` con tarjetas listas para imprimir (logo, "Te atiende: <nombre>", código y QR). Por defecto el QR apunta a https://dashmediccare.com.
+
+## Precios especiales por empresa (La Cosmopolitana)
+
+Definidos en `lib/empresas.mjs` (y su copia para mostrar en `membresias.html`, `const EMPRESAS`). Con `?e=cosmopolitana` la página muestra el precio exclusivo y el cobro usa los precios de esa empresa:
+
+| Paquete | Personas | Mensual + IVA | Anual + IVA |
+|---|---|---|---|
+| Individual | 1 | $439 | $4,390 |
+| Dúo | 2 | $699 | $6,990 |
+| Familiar | 4 | $999 | $9,990 |
+| Extendido | 7 | $1,499 | $14,990 |
+
+- Fuente: *Plan_Ejecucion_DASH_Cosmopolitana_Iztapalapa.pdf* (nov 2026). El paquete se elige solo según titular + familiares registrados.
+- **Fundadores:** 20% en el primer pago mensual (cupón de Stripe `FUNDADORES_COSMO`, una sola vez). Activo por ahora; para apagarlo: `FUNDADORES_APAGADO=1` en Netlify o `fundadores.activo: false` en `lib/empresas.mjs`.
+- Precios en Stripe: producto "Salud Digital – La Cosmopolitana", lookup_key `dash_empresa_cosmopolitana_<paquete>_<mensual|anual>`. `npm run stripe:prueba` los crea junto con el cupón.
+- Comisiones: mismas reglas que la lista (titular completo, cada familiar a la mitad).
+- **No automatizado:** "Refiere y ahorra" ($100 por compañero referido): se aplica a mano en Stripe (cupón al cliente).

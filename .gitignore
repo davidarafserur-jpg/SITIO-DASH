@@ -3,6 +3,8 @@ dist/
 .netlify/
 # Datos de la vista previa local (hoja, correos y eventos de prueba)
 .local/
+# QR generados con npm run qr (se imprimen; no se publican)
+qr-vendedores/
 .env
 .env.*
 !.env.example
