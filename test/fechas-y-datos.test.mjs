@@ -86,6 +86,14 @@ test('Familiares: validación y metadata de Stripe', async () => {
   assert.equal(titularDeReferencia('sub_123#f2'), 'sub_123');
 });
 
+test('Claves de idempotencia seguras para URL (familiares con "#")', async () => {
+  const { claveSegura } = await import('../lib/idempotencia.mjs');
+  assert.notEqual(claveSegura('pasos/alta/sub_1#f1'), claveSegura('pasos/alta/sub_1'));
+  assert.equal(claveSegura('pasos/alta/sub_1#f1'), 'pasos/alta/sub_1_23_f1');
+  assert.equal(claveSegura('eventos/evt_123'), 'eventos/evt_123');
+  assert.match(claveSegura('a b?c'), /^[A-Za-z0-9/_.\-]+$/);
+});
+
 test('Validación de solicitud de factura', () => {
   const base = { correo: 'a@b.mx', rfc: 'lopa800101ab1', razon_social: 'Ana López', regimen_fiscal: '605', cp: '06600', uso_cfdi: 'G03', id_pago: 'pi_123456' };
   const ok = validarSolicitud(base);
